@@ -1,0 +1,136 @@
+mql5
+//+------------------------------------------------------------------+
+//|                                        TraderMind EA MT4        |
+//|                     Developed by: Forex Robot Easy Team         |
+//|                          Website: forexroboteasy.com             |
+//+------------------------------------------------------------------+
+
+// Adjustable Parameters
+extern string Instruments = 'USDCAD';
+
+// Global Variables
+double StopLoss;
+double TakeProfit;
+double TrailingStop;
+double OrderSize = 0.01;
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//|                        Initialization                            |
+//|                                                                  |
+//+------------------------------------------------------------------+
+void OnInit()
+{
+    // Calculate Stop Loss, Take Profit and Trailing Stop
+    CalculateStopLoss();
+    CalculateTakeProfit();
+    CalculateTrailingStop();
+    
+    // Print calculated values in the Journal
+    Print('Stop Loss: ', StopLoss);
+    Print('Take Profit: ', TakeProfit);
+    Print('Trailing Stop: ', TrailingStop);
+}
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//|                        Trading Algorithm                          |
+//|                                                                  |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+    // Check if the current instrument is USDCAD
+    if (Symbol() == Instruments)
+    {
+        // Place buy/sell order with specified OrderSize, Stop Loss and Take Profit
+        if (ConditionToOpenPosition())
+        {
+            if (OrderType() == OP_BUY)
+            {
+                OrderSend(Symbol(), OP_SELL, OrderSize, Ask, 10, StopLoss, TakeProfit);
+            }
+            else if (OrderType() == OP_SELL)
+            {
+                OrderSend(Symbol(), OP_BUY, OrderSize, Bid, 10, StopLoss, TakeProfit);
+            }
+        }
+        
+        // Close positions at the appropriate time to secure profits and minimize drawdowns
+        if (ConditionToClosePosition())
+        {
+            CloseAllPositions();
+        }
+        
+        // Trailing stop functionality
+        if (ConditionToTrailStop())
+        {
+            ModifyStopLoss();
+        }
+    }
+}
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//|                     Calculation Functions                        |
+//|                                                                  |
+//+------------------------------------------------------------------+
+void CalculateStopLoss()
+{
+    // Calculate Stop Loss based on market conditions
+    StopLoss = MarketPrice() - 0.001;
+}
+
+void CalculateTakeProfit()
+{
+    // Calculate Take Profit based on market conditions
+    TakeProfit = MarketPrice() + 0.001;
+}
+
+void CalculateTrailingStop()
+{
+    // Calculate Trailing Stop based on market conditions
+    TrailingStop = MarketPrice() - 0.0005;
+}
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//|                          Order Functions                          |
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool ConditionToOpenPosition()
+{
+    // Implement your logic to determine when to open a position
+    return true;
+}
+
+bool ConditionToClosePosition()
+{
+    // Implement your logic to determine when to close a position
+    return true;
+}
+
+void CloseAllPositions()
+{
+    // Close all open positions
+    for (int i = OrdersTotal() - 1; i >= 0; i--)
+    {
+        if (OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
+        {
+            OrderClose(OrderTicket(), OrderLots(), MarketPrice(), 10);
+        }
+    }
+}
+
+void ModifyStopLoss()
+{
+    // Modify Stop Loss based on trailing stop level
+    if (OrderType() == OP_BUY)
+    {
+        OrderModify(OrderTicket(), OrderOpenPrice(), TrailingStop, TakeProfit, 0);
+    }
+    else if (OrderType() == OP_SELL)
+    {
+        OrderModify(OrderTicket(), OrderOpenPrice(), TakeProfit, TrailingStop, 0);
+    }
+}
+```
